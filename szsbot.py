@@ -7,9 +7,7 @@ import sys
 def writeln (f, s):
     f.write(s + "\n")
     
-def submitApplication (args):
-    course_nr, user_id, password = args
-
+def submit_application (course_nr, user_id, password):
     br = mechanicalsoup.StatefulBrowser()
     # br.set_handle_robots(False)
     br.open("https://www.szsb.uni-saarland.de/sprachkurse/Anmelden.asp?KursNr={0}".format(course_nr))
@@ -18,8 +16,12 @@ def submitApplication (args):
     br["Kennwort"] = password
     res = br.submit_selected()
 
-    soup = BeautifulSoup(res.content, "lxml")
+    # the html says it's latin1 but actually it's utf-8 encoded
+    soup = BeautifulSoup(res.content, "lxml", from_encoding="utf-8")
     return soup
+
+def find_string(soup, string):
+    return soup.find(string=re.compile(string, re.IGNORECASE))
 
 
 if __name__ == "__main__":
@@ -30,19 +32,26 @@ if __name__ == "__main__":
         sys.exit(1)
 
     strange = False
+    course_nr = sys.argv[1]
     
     while True:
-        soup = submitApplication(sys.argv[1:])
+        soup = submit_application(*sys.argv[1:])
 
-        with open("/home/adrian/programming/python/szsbot/szsbot.log", "w") as f:
+        with open(f"/home/adrian/programming/szsbot/szsbot{course_nr}.log", "a") as f:
             # if we are too early try again in 10 seconds
-            if soup.find_all(string=re.compile(u'Frühanmeldungen nicht möglich!')):
+            if find_string(soup, u'Frühanmeldungen nicht möglich!'):
                 writeln(f, "Zu frueh...")
             # Checking for Erfolgreich has worked so far
-            elif soup.find_all(string=re.compile("Erfolgreich", re.IGNORECASE)):
+            elif find_string(soup, "Erfolgreich"):
                 writeln(f, "ERFOLGREICH!")
                 writeln(f, soup.text)
-                sys.exit(0)
+                break
+            elif find_string(soup, "Anmeldung Fehlgeschlagen") \
+                 and soup.find("form", attrs={"name":"KursBearbeiten"}) \
+                 and find_string(soup.find("form", attrs={"name":"KursBearbeiten"}), course_nr):
+                writeln(f, "Bin wohl schon angemeldet.")
+                writeln(f, soup.text)
+                break
             else:
                 writeln(f, "What happened?")
                 if not strange:
