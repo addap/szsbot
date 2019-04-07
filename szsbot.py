@@ -1,3 +1,4 @@
+# -*- coding: future_fstrings -*-
 from bs4 import BeautifulSoup
 import mechanicalsoup
 import time
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     while True:
         soup = submit_application(*sys.argv[1:])
 
-        with open(f"/home/adrian/programming/szsbot/szsbot{course_nr}.log", "a") as f:
+        with open(f"./szsbot{course_nr}.log", "a") as f:
             # if we are too early try again in 10 seconds
             if find_string(soup, u'Frühanmeldungen nicht möglich!'):
                 writeln(f, "Zu frueh...")
@@ -58,7 +59,7 @@ if __name__ == "__main__":
                     writeln(f, soup.text)
                 strange = True
 
-        time.sleep(10)
+        time.sleep(3)
 
 
                 

@@ -1,5 +1,5 @@
 #!/bin/bash
 
 source env/bin/activate
-python szsbot.py $@
+python3 szsbot.py $@
 deactivate
